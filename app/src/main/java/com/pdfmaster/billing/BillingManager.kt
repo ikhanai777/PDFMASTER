@@ -17,6 +17,7 @@ import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.acknowledgePurchase
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
+import com.pdfmaster.BuildConfig
 import com.pdfmaster.data.Prefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,8 +49,10 @@ class BillingManager(
 
     private val purchased = MutableStateFlow(prefs.cachedPro)
 
-    val isPro: StateFlow<Boolean> = combine(purchased, prefs.debugPro) { bought, debug -> bought || (debuggable && debug) }
-        .stateIn(scope, SharingStarted.Eagerly, prefs.cachedPro)
+    val isPro: StateFlow<Boolean> = combine(purchased, prefs.debugPro) { bought, debug ->
+        BuildConfig.UNLOCK_ALL || bought || (debuggable && debug)
+    }
+        .stateIn(scope, SharingStarted.Eagerly, BuildConfig.UNLOCK_ALL || prefs.cachedPro)
 
     private val _products = MutableStateFlow<Map<Plan, ProductDetails>>(emptyMap())
     val products: StateFlow<Map<Plan, ProductDetails>> = _products.asStateFlow()
@@ -58,7 +61,7 @@ class BillingManager(
     val message: StateFlow<String?> = _message.asStateFlow()
 
     fun connect() {
-        if (client.isReady) return
+        if (BuildConfig.UNLOCK_ALL || client.isReady) return
         client.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(result: BillingResult) {
                 if (result.responseCode == BillingClient.BillingResponseCode.OK) {

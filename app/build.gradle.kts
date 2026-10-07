@@ -16,6 +16,7 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         resourceConfigurations += listOf("en", "ar")
+        buildConfigField("boolean", "UNLOCK_ALL", "false")
     }
 
     buildTypes {
@@ -23,6 +24,16 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        // Owner's own copy: every Pro tool unlocked, no purchase needed. Installs alongside
+        // the store version and is signed with the local debug key for sideloading.
+        create("personal") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".personal"
+            versionNameSuffix = "-personal"
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("boolean", "UNLOCK_ALL", "true")
+            matchingFallbacks += "release"
         }
     }
     compileOptions {

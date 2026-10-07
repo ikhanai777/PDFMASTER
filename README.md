@@ -40,6 +40,7 @@ Requires JDK 17+ and the Android SDK (platform 35).
 ./gradlew :app:assembleDebug          # debug APK
 ./gradlew :app:testDebugUnitTest      # 47 JVM tests (Robolectric)
 ./gradlew :app:lintDebug
+./gradlew :app:assemblePersonal      # your own copy: all Pro tools unlocked, sideloadable
 ```
 
 The tests cover page-range parsing, page-rotation geometry, crash-safe writes, auto-naming,
