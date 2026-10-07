@@ -88,7 +88,7 @@ fun ToolsScreen() {
         ToolGroup.entries.forEach { group ->
             val tools = visible.filter { it.group == group }
             if (tools.isNotEmpty()) {
-                item(span = { GridItemSpan(maxLineSpan) }, key = group.name) {
+                item(span = { GridItemSpan(maxLineSpan) }, key = "group:" + group.name) {
                     Text(stringResource(group.title()), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp))
                 }
                 items(tools, key = { it.name }) { tool ->

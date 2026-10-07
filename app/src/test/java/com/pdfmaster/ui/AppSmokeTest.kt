@@ -1,18 +1,15 @@
 package com.pdfmaster.ui
 
 import android.graphics.Bitmap
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.platform.LocalLayoutDirection
 import com.pdfmaster.MainActivity
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -36,10 +33,7 @@ class AppSmokeTest {
     private fun shot(name: String) {
         compose.waitForIdle()
         val dir = File("build/screenshots").apply { mkdirs() }
-        runCatching {
-            val bmp = compose.onRoot().captureToImage().asAndroidBitmap()
-            File(dir, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        }
+        saveScreenshot(compose.activity, File(dir, "$name.png"))
     }
 
     @Test fun walkThroughMainScreens() {
@@ -48,14 +42,14 @@ class AppSmokeTest {
         shot("01-home")
 
         compose.onAllNodesWithText("Tools").onFirst().performClick()
-        compose.onNodeWithText("Organise").assertExists()
+        compose.onNodeWithText("Edit & sign").assertExists()
         shot("02-tools")
         compose.onNode(hasSetTextAction()).performTextInput("compress")
         compose.onAllNodesWithText("Compress").onFirst().assertExists()
         shot("03-tools-search")
 
         compose.onAllNodesWithText("Files").onFirst().performClick()
-        compose.onNodeWithText("Import").assertExists()
+        compose.onNodeWithText("Import", useUnmergedTree = true).assertExists()
         shot("04-files")
 
         compose.onAllNodesWithText("Me").onFirst().performClick()
@@ -68,16 +62,17 @@ class AppSmokeTest {
 
     @Test fun toolScreensOpen() {
         compose.onAllNodesWithText("Tools").onFirst().performClick()
+        compose.onNode(hasSetTextAction()).performTextInput("merge")
         compose.onAllNodesWithText("Merge").onFirst().performClick()
         compose.onNodeWithText("Add files, then drag to set the order.").assertExists()
         shot("07-merge")
         compose.activity.onBackPressedDispatcher.onBackPressed()
-
+        compose.onNode(hasSetTextAction()).performTextReplacement("split")
         compose.onAllNodesWithText("Split").onFirst().performClick()
         compose.onNodeWithText("Choose PDF").assertExists()
         shot("08-split")
         compose.activity.onBackPressedDispatcher.onBackPressed()
-
+        compose.onNode(hasSetTextAction()).performTextReplacement("compress")
         compose.onAllNodesWithText("Compress").onFirst().performClick()
         compose.onNodeWithText("Balanced").assertExists()
         shot("09-compress")
@@ -112,17 +107,22 @@ class ArabicSmokeTest {
         compose.waitForIdle()
         assertEquals(LayoutDirection.Rtl, direction)
         val dir = File("build/screenshots").apply { mkdirs() }
-        runCatching {
-            val bmp = compose.onRoot().captureToImage().asAndroidBitmap()
-            File(dir, "12-home-arabic.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        }
+        compose.waitForIdle()
+        saveScreenshot(compose.activity, File(dir, "12-home-arabic.png"))
         compose.onAllNodesWithText("الأدوات").onFirst().performClick()
-        compose.onNodeWithText("التنظيم").assertExists()
-        runCatching {
-            val bmp = compose.onRoot().captureToImage().asAndroidBitmap()
-            File(dir, "13-tools-arabic.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        }
+        compose.onNodeWithText("التحرير والتوقيع").assertExists()
+        compose.waitForIdle()
+        saveScreenshot(compose.activity, File(dir, "13-tools-arabic.png"))
     }
 
-    @Suppress("unused") private val keep = LocalLayoutDirection
+}
+
+/** Software-draws the activity window; works under Robolectric's native graphics. */
+internal fun saveScreenshot(activity: android.app.Activity, file: File) {
+    runCatching {
+        val view = activity.window.decorView
+        val bmp = Bitmap.createBitmap(view.width.coerceAtLeast(1), view.height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+        view.draw(android.graphics.Canvas(bmp))
+        file.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }.onFailure { System.err.println("SCREENSHOT_FAIL ${file.name}: $it") }
 }
