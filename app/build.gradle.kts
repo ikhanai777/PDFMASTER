@@ -34,6 +34,8 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             buildConfigField("boolean", "UNLOCK_ALL", "true")
             matchingFallbacks += "release"
+            // Modern phones only, to keep the sideloaded file small (~17 MB instead of ~45 MB).
+            ndk { abiFilters += "arm64-v8a" }
         }
     }
     compileOptions {
